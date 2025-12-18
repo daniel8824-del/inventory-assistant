@@ -1,0 +1,1229 @@
+{
+  "name": "Inventory Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "category"
+            },
+            {
+              "name": "item_name"
+            },
+            {
+              "name": "item_note"
+            },
+            {
+              "name": "item_code"
+            },
+            {
+              "name": "cost"
+            },
+            {
+              "name": "pre_quantity"
+            },
+            {
+              "name": "now_quantity"
+            },
+            {
+              "name": "price"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        -96
+      ],
+      "id": "1cbfd865-f3d0-42a6-ac2e-c692af9bd861",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT upsert_stock_item(\n  $1::TEXT,\n  $2::TEXT,\n  $3::TEXT,\n  $4::TEXT,\n  $5::NUMERIC,   -- 단가 (INT8 → NUMERIC 변경)\n  $6::INT8,\n  $7::INT8,\n  $8::INT8       -- 금액 (반올림된 정수)\n) as result",
+        "options": {
+          "queryReplacement": "={{ [\n  $json['category'],\n  $json['item_name'],\n  $json['item_note'] || '',\n  $json['item_code'] || '',\n  Number($json['cost']),\n  Number($json['pre_quantity']),\n  Number($json['now_quantity']),\n  Number($json['price'])\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -448,
+        -96
+      ],
+      "id": "fa564f3a-abb7-4917-9c0b-ffd75529a69e",
+      "name": "Inventory DB",
+      "credentials": {
+        "postgres": {
+          "id": "2gQEpOURQxyerhGd",
+          "name": "Postgres K1solution"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f4e3a106-20e4-4250-8ea2-c57cff05a5df",
+              "leftValue": "={{ $json.result.success }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -272,
+        -96
+      ],
+      "id": "ae851b31-a796-42d8-9b05-9991a00656bc",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        80
+      ],
+      "id": "6780c348-0d81-42b8-9a46-3c43fdf09d76",
+      "name": "No Operation"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1ZuHVFhnJltG5Q2hdGO1kL_iPCJ9cmQ6C1JqqpIy5OmE",
+          "mode": "list",
+          "cachedResultName": "케이원솔루션 재고관리",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZuHVFhnJltG5Q2hdGO1kL_iPCJ9cmQ6C1JqqpIy5OmE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1411429421,
+          "mode": "list",
+          "cachedResultName": "현재수량",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZuHVFhnJltG5Q2hdGO1kL_iPCJ9cmQ6C1JqqpIy5OmE/edit#gid=1411429421"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "품목명[규격]": "={{ $json.result['품목명[규격]'] }}",
+            "비고": "={{ $json.result['비고'] }}",
+            "구분명": "={{ $json.result['구분명'] }}",
+            "품목코드": "={{ $json.result['품목코드'] }}",
+            "단가": "={{ $json.result['단가'] }}",
+            "전월수량": "={{ $json.result['전월수량'] }}",
+            "현재수량": "={{ $json.result['현재수량'] }}",
+            "유니크키": "={{ $json.result['유니크키'] }}"
+          },
+          "matchingColumns": [
+            "유니크키"
+          ],
+          "schema": [
+            {
+              "id": "구분명",
+              "displayName": "구분명",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "유니크키",
+              "displayName": "유니크키",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "품목명[규격]",
+              "displayName": "품목명[규격]",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "비고",
+              "displayName": "비고",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "품목코드",
+              "displayName": "품목코드",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "단가",
+              "displayName": "단가",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "전월수량",
+              "displayName": "전월수량",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "현재수량",
+              "displayName": "현재수량",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "금액",
+              "displayName": "금액",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -80,
+        -304
+      ],
+      "id": "4bc94160-b8ca-4d22-ab42-8e3c746f6acd",
+      "name": "Inventory Sheets",
+      "credentials": {
+        "googleApi": {
+          "id": "nYGtrltODYG10hbC",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appM1U2Sz2x9E4BSF",
+          "mode": "list",
+          "cachedResultName": "재고관리",
+          "cachedResultUrl": "https://airtable.com/appM1U2Sz2x9E4BSF"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaDpbJ5jB5mnGLi",
+          "mode": "list",
+          "cachedResultName": "현재수량",
+          "cachedResultUrl": "https://airtable.com/appM1U2Sz2x9E4BSF/tblaDpbJ5jB5mnGLi"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "유니크키": "={{ $json['유니크키'] }}",
+            "구분명": "={{ $json['구분명'] }}",
+            "비고": "={{ $json['비고'] }}",
+            "품목명[규격]": "={{ $json['품목명[규격]'] }}",
+            "단가": "={{ $json['단가'] }}",
+            "전월수량": "={{ $json['전월수량'] }}",
+            "현재수량": "={{ $json['현재수량'] }}",
+            "품목코드": "={{ $json['품목코드'] }}",
+            "재고원가": "={{ \n  ({\n    '신천등기구_조립': '신천등기구',\n    '신천등기구_미조립': '신천등기구',\n    '루넥스등기구': '루넥스등기구',\n    '유니온SMPS': 'SMPS',\n    'K1모듈': 'LED모듈',\n    '세종&교은모듈': 'LED모듈',\n    '네오네온모듈': 'LED모듈',\n    '하네스': '하네스',\n    '모듈생산창고': 'LED모듈 부속자재 외 기타',\n    '기타재고': 'LED모듈 부속자재 외 기타',\n    '킹브라이트렌즈': '킹브라이트렌즈',\n    '백룡등기구': '기타등기구',\n    '기민전자,엔에스,나이스테크등기구': '기타등기구',\n    '크리패키지': 'LED패키지',\n    '오스람패키지': 'LED패키지',\n    '서울반도체패키지': 'LED패키지',\n    '삼성패키지': 'LED패키지',\n    '엘지패키지': 'LED패키지',\n    '루멘스&루미레즈패키지': 'LED패키지',\n    '씨앤지옵틱렌즈': 'LED모듈 부속자재 외 기타',\n    'ILENS렌즈': '',\n    '유니온K1재고': 'SMPS'\n  })[$json['구분명']] || ''\n}}"
+          },
+          "matchingColumns": [
+            "유니크키"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "유니크키",
+              "displayName": "유니크키",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "구분명",
+              "displayName": "구분명",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "신천등기구_조립",
+                  "value": "신천등기구_조립"
+                },
+                {
+                  "name": "신천등기구_미조립",
+                  "value": "신천등기구_미조립"
+                },
+                {
+                  "name": "루넥스등기구",
+                  "value": "루넥스등기구"
+                },
+                {
+                  "name": "유니온SMPS",
+                  "value": "유니온SMPS"
+                },
+                {
+                  "name": "K1모듈",
+                  "value": "K1모듈"
+                },
+                {
+                  "name": "세종&교은모듈",
+                  "value": "세종&교은모듈"
+                },
+                {
+                  "name": "네오네온모듈",
+                  "value": "네오네온모듈"
+                },
+                {
+                  "name": "하네스",
+                  "value": "하네스"
+                },
+                {
+                  "name": "모듈생산창고",
+                  "value": "모듈생산창고"
+                },
+                {
+                  "name": "기타재고",
+                  "value": "기타재고"
+                },
+                {
+                  "name": "킹브라이트렌즈",
+                  "value": "킹브라이트렌즈"
+                },
+                {
+                  "name": "백룡등기구",
+                  "value": "백룡등기구"
+                },
+                {
+                  "name": "기민전자,엔에스,나이스테크등기구",
+                  "value": "기민전자,엔에스,나이스테크등기구"
+                },
+                {
+                  "name": "크리패키지",
+                  "value": "크리패키지"
+                },
+                {
+                  "name": "오스람패키지",
+                  "value": "오스람패키지"
+                },
+                {
+                  "name": "서울반도체패키지",
+                  "value": "서울반도체패키지"
+                },
+                {
+                  "name": "삼성패키지",
+                  "value": "삼성패키지"
+                },
+                {
+                  "name": "엘지패키지",
+                  "value": "엘지패키지"
+                },
+                {
+                  "name": "루멘스&루미레즈패키지",
+                  "value": "루멘스&루미레즈패키지"
+                },
+                {
+                  "name": "씨앤지옵틱렌즈",
+                  "value": "씨앤지옵틱렌즈"
+                },
+                {
+                  "name": "ILENS렌즈",
+                  "value": "ILENS렌즈"
+                },
+                {
+                  "name": "유니온K1재고",
+                  "value": "유니온K1재고"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "품목명[규격]",
+              "displayName": "품목명[규격]",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "비고",
+              "displayName": "비고",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "품목코드",
+              "displayName": "품목코드",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "단가",
+              "displayName": "단가",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "전월수량",
+              "displayName": "전월수량",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "현재수량",
+              "displayName": "현재수량",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "금액",
+              "displayName": "금액",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "넘버",
+              "displayName": "넘버",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "재고원가",
+              "displayName": "재고원가",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "신천등기구",
+                  "value": "신천등기구"
+                },
+                {
+                  "name": "루넥스등기구",
+                  "value": "루넥스등기구"
+                },
+                {
+                  "name": "SMPS",
+                  "value": "SMPS"
+                },
+                {
+                  "name": "LED모듈",
+                  "value": "LED모듈"
+                },
+                {
+                  "name": "하네스",
+                  "value": "하네스"
+                },
+                {
+                  "name": "LED모듈 부속자재 외 기타",
+                  "value": "LED모듈 부속자재 외 기타"
+                },
+                {
+                  "name": "킹브라이트렌즈",
+                  "value": "킹브라이트렌즈"
+                },
+                {
+                  "name": "기타등기구",
+                  "value": "기타등기구"
+                },
+                {
+                  "name": "LED패키지",
+                  "value": "LED패키지"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        96,
+        -304
+      ],
+      "id": "9c3261df-7c5a-499f-b2be-493bfca36a35",
+      "name": "Inventory Table",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "z5OjQuTdPV4EC5O3",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH stock_data AS (\n  SELECT 유니크키, 전월수량, 현재수량\n  FROM current_stock\n  WHERE 유니크키 = '{{ $json.result['유니크키'] }}'\n),\nupdated_risk AS (\n  UPDATE current_stock cs\n  SET\n    위험재고 = r.위험재고,\n    재고회전 = r.재고회전,\n    상태 = r.상태\n  FROM stock_data sd\n  CROSS JOIN LATERAL calculate_risk_metrics(sd.전월수량, sd.현재수량) r\n  WHERE cs.유니크키 = sd.유니크키\n  RETURNING cs.*\n)\nSELECT \n  유니크키,\n  구분명,\n  \"품목명[규격]\",\n  비고,\n  품목코드,\n  단가,\n  현재수량,\n  전월수량,\n  위험재고,\n  재고회전,\n  상태\nFROM updated_risk;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -80,
+        -112
+      ],
+      "id": "0ae0cad8-3f03-4776-9326-c3778ffd6ce4",
+      "name": "Update DB",
+      "credentials": {
+        "postgres": {
+          "id": "2gQEpOURQxyerhGd",
+          "name": "Postgres K1solution"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appM1U2Sz2x9E4BSF",
+          "mode": "list",
+          "cachedResultName": "재고관리",
+          "cachedResultUrl": "https://airtable.com/appM1U2Sz2x9E4BSF"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbliDZOh1QwmvERgf",
+          "mode": "list",
+          "cachedResultName": "위험재고",
+          "cachedResultUrl": "https://airtable.com/appM1U2Sz2x9E4BSF/tbliDZOh1QwmvERgf"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "유니크키": "={{ $json['유니크키'] }}",
+            "위험재고": "={{ $json['위험재고'] }}",
+            "재고회전": "={{ $json['재고회전'] }}",
+            "상태": "={{ $json['상태'] }}",
+            "현재수량": "={{ $('Update DB').item.json['현재수량'] }}",
+            "품목명[규격]": "={{ $json['품목명[규격]'] }}",
+            "구분명": "={{ $json['구분명'] }}",
+            "비고": "={{ $json['비고'] }}",
+            "품목코드": "={{ $json['품목코드'] }}",
+            "전월수량": "={{ $('Update DB').item.json['전월수량'] }}",
+            "재고원가": "={{ \n  ({\n    '신천등기구_조립': '신천등기구',\n    '신천등기구_미조립': '신천등기구',\n    '루넥스등기구': '루넥스등기구',\n    '유니온SMPS': 'SMPS',\n    'K1모듈': 'LED모듈',\n    '세종&교은모듈': 'LED모듈',\n    '네오네온모듈': 'LED모듈',\n    '하네스': '하네스',\n    '모듈생산창고': 'LED모듈 부속자재 외 기타',\n    '기타재고': 'LED모듈 부속자재 외 기타',\n    '킹브라이트렌즈': '킹브라이트렌즈',\n    '백룡등기구': '기타등기구',\n    '기민전자,엔에스,나이스테크등기구': '기타등기구',\n    '크리패키지': 'LED패키지',\n    '오스람패키지': 'LED패키지',\n    '서울반도체패키지': 'LED패키지',\n    '삼성패키지': 'LED패키지',\n    '엘지패키지': 'LED패키지',\n    '루멘스&루미레즈패키지': 'LED패키지',\n    '씨앤지옵틱렌즈': 'LED모듈 부속자재 외 기타',\n    'ILENS렌즈': '',\n    '유니온K1재고': 'SMPS'\n  })[$json['구분명']] || ''\n}}",
+            "단가": "={{ $('Update DB').item.json['단가'] }}"
+          },
+          "matchingColumns": [
+            "유니크키"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "유니크키",
+              "displayName": "유니크키",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "구분명",
+              "displayName": "구분명",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "신천등기구_조립",
+                  "value": "신천등기구_조립"
+                },
+                {
+                  "name": "신천등기구_미조립",
+                  "value": "신천등기구_미조립"
+                },
+                {
+                  "name": "루넥스등기구",
+                  "value": "루넥스등기구"
+                },
+                {
+                  "name": "유니온SMPS",
+                  "value": "유니온SMPS"
+                },
+                {
+                  "name": "K1모듈",
+                  "value": "K1모듈"
+                },
+                {
+                  "name": "세종&교은모듈",
+                  "value": "세종&교은모듈"
+                },
+                {
+                  "name": "네오네온모듈",
+                  "value": "네오네온모듈"
+                },
+                {
+                  "name": "하네스",
+                  "value": "하네스"
+                },
+                {
+                  "name": "모듈생산창고",
+                  "value": "모듈생산창고"
+                },
+                {
+                  "name": "기타재고",
+                  "value": "기타재고"
+                },
+                {
+                  "name": "킹브라이트렌즈",
+                  "value": "킹브라이트렌즈"
+                },
+                {
+                  "name": "백룡등기구",
+                  "value": "백룡등기구"
+                },
+                {
+                  "name": "기민전자,엔에스,나이스테크등기구",
+                  "value": "기민전자,엔에스,나이스테크등기구"
+                },
+                {
+                  "name": "크리패키지",
+                  "value": "크리패키지"
+                },
+                {
+                  "name": "오스람패키지",
+                  "value": "오스람패키지"
+                },
+                {
+                  "name": "서울반도체패키지",
+                  "value": "서울반도체패키지"
+                },
+                {
+                  "name": "삼성패키지",
+                  "value": "삼성패키지"
+                },
+                {
+                  "name": "엘지패키지",
+                  "value": "엘지패키지"
+                },
+                {
+                  "name": "루멘스&루미레즈패키지",
+                  "value": "루멘스&루미레즈패키지"
+                },
+                {
+                  "name": "씨앤지옵틱렌즈",
+                  "value": "씨앤지옵틱렌즈"
+                },
+                {
+                  "name": "ILENS렌즈",
+                  "value": "ILENS렌즈"
+                },
+                {
+                  "name": "유니온K1재고",
+                  "value": "유니온K1재고"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "품목명[규격]",
+              "displayName": "품목명[규격]",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "비고",
+              "displayName": "비고",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "품목코드",
+              "displayName": "품목코드",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "단가",
+              "displayName": "단가",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "전월수량",
+              "displayName": "전월수량",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "현재수량",
+              "displayName": "현재수량",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "금액",
+              "displayName": "금액",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "위험재고",
+              "displayName": "위험재고",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "재고회전",
+              "displayName": "재고회전",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "상태",
+              "displayName": "상태",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "넘버",
+              "displayName": "넘버",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "재고원가",
+              "displayName": "재고원가",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "신천등기구",
+                  "value": "신천등기구"
+                },
+                {
+                  "name": "루넥스등기구",
+                  "value": "루넥스등기구"
+                },
+                {
+                  "name": "SMPS",
+                  "value": "SMPS"
+                },
+                {
+                  "name": "LED모듈",
+                  "value": "LED모듈"
+                },
+                {
+                  "name": "하네스",
+                  "value": "하네스"
+                },
+                {
+                  "name": "LED모듈 부속자재 외 기타",
+                  "value": "LED모듈 부속자재 외 기타"
+                },
+                {
+                  "name": "킹브라이트렌즈",
+                  "value": "킹브라이트렌즈"
+                },
+                {
+                  "name": "기타등기구",
+                  "value": "기타등기구"
+                },
+                {
+                  "name": "LED패키지",
+                  "value": "LED패키지"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        -112
+      ],
+      "id": "f4204c84-2308-4026-a05a-436efaed4c51",
+      "name": "Update Table",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "z5OjQuTdPV4EC5O3",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1ZuHVFhnJltG5Q2hdGO1kL_iPCJ9cmQ6C1JqqpIy5OmE",
+          "mode": "list",
+          "cachedResultName": "케이원솔루션 재고관리",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZuHVFhnJltG5Q2hdGO1kL_iPCJ9cmQ6C1JqqpIy5OmE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 809397942,
+          "mode": "list",
+          "cachedResultName": "위험재고",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZuHVFhnJltG5Q2hdGO1kL_iPCJ9cmQ6C1JqqpIy5OmE/edit#gid=809397942"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "유니크키": "={{ $json['유니크키'] }}",
+            "구분명": "={{ $json['구분명'] }}",
+            "품목명[규격]": "={{ $json['품목명[규격]'] }}",
+            "비고": "={{ $json['비고'] }}",
+            "품목코드": "={{ $json['품목코드'] }}",
+            "위험재고": "={{ $json['위험재고'] }}",
+            "재고회전": "={{ $json['재고회전'] }}",
+            "상태": "={{ $json['상태'] }}"
+          },
+          "matchingColumns": [
+            "유니크키"
+          ],
+          "schema": [
+            {
+              "id": "구분명",
+              "displayName": "구분명",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "유니크키",
+              "displayName": "유니크키",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "품목명[규격]",
+              "displayName": "품목명[규격]",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "비고",
+              "displayName": "비고",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "품목코드",
+              "displayName": "품목코드",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "단가",
+              "displayName": "단가",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "전월수량",
+              "displayName": "전월수량",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "현재수량",
+              "displayName": "현재수량",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "금액",
+              "displayName": "금액",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "위험재고",
+              "displayName": "위험재고",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "재고회전",
+              "displayName": "재고회전",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "상태",
+              "displayName": "상태",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        96,
+        -112
+      ],
+      "id": "4d33c3ac-8042-4e36-8a87-be1fc3052955",
+      "name": "Update Sheets",
+      "credentials": {
+        "googleApi": {
+          "id": "nYGtrltODYG10hbC",
+          "name": "Google Service Account account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Inventory DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inventory DB": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update DB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Inventory Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inventory Sheets": {
+      "main": [
+        [
+          {
+            "node": "Inventory Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update DB": {
+      "main": [
+        [
+          {
+            "node": "Update Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheets": {
+      "main": [
+        [
+          {
+            "node": "Update Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3e8686fe-ddd1-4c55-a7db-2f1feeb3d2be",
+  "meta": {
+    "instanceId": "ed29603280f689e433d162d6eb2f4c0ef594feb614602d9f72d06ccb3a8d3e19"
+  },
+  "id": "ksZzSwUgfIhwaCe0",
+  "tags": []
+}
