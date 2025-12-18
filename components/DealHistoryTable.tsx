@@ -194,7 +194,7 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
       }));
   }, [filteredData]);
 
-  // 카테고리별 색상
+  // 카테고리별 색상 (차트용)
   const CHART_COLORS: { [key: string]: string } = useMemo(() => {
     const colors = [
       '#E879F9', '#92400E', '#EF4444', '#3B82F6', '#FACC15',
@@ -213,6 +213,13 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
   const formatNumber = (num: number) => num.toLocaleString('ko-KR');
   const formatPrice = (num: number) => num.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const formatAmount = (num: number) => Math.abs(num).toLocaleString('ko-KR');
+  
+  // 제출일시 포맷팅 (2025-12-17T21:19:00 → 2025-12-17 21:19)
+  const formatDateTime = (dateStr: string | undefined) => {
+    if (!dateStr) return '-';
+    // 날짜 + 시:분 표시 (초 제외)
+    return dateStr.replace('T', ' ').substring(0, 16);
+  };
 
   // 차트 Y축 - 만단위, 억단위 표시
   const formatChartAmount = (val: number) => {
@@ -532,66 +539,66 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-bg-body/50 text-left">
+            <tr className="bg-bg-body/50 text-left text-xs">
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('제출일시')}
               >
                 제출일시<SortIndicator field="제출일시" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래일자')}
               >
                 거래일자<SortIndicator field="거래일자" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래구분')}
               >
-                거래구분<SortIndicator field="거래구분" />
+                구분<SortIndicator field="거래구분" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('구분명')}
               >
                 구분명<SortIndicator field="구분명" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 cursor-pointer hover:text-white"
+                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white"
                 onClick={() => handleSort('품목명[규격]')}
               >
                 품목명[규격]<SortIndicator field="품목명[규격]" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래처명')}
               >
                 거래처<SortIndicator field="거래처명" />
               </th>
-              <th className="px-3 py-3 font-semibold text-zinc-400 whitespace-nowrap">
+              <th className="px-2 py-2 font-semibold text-zinc-400 whitespace-nowrap">
                 담당자
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래수량')}
               >
                 수량<SortIndicator field="거래수량" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('단가')}
               >
                 단가<SortIndicator field="단가" />
               </th>
               <th 
-                className="px-3 py-3 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('금액')}
               >
                 금액<SortIndicator field="금액" />
               </th>
-              <th className="px-3 py-3 font-semibold text-zinc-400 text-center whitespace-nowrap">
-                재고 변동
+              <th className="px-2 py-2 font-semibold text-zinc-400 text-center whitespace-nowrap">
+                재고변동
               </th>
             </tr>
           </thead>
@@ -599,65 +606,65 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
             {filteredData.length > 0 ? (
               filteredData.map((item, idx) => (
                 <tr key={item.id || idx} className="hover:bg-zinc-900/50 transition-colors">
-                  <td className="px-3 py-3 font-mono text-xs text-zinc-500 whitespace-nowrap">
-                    {item.제출일시 || '-'}
+                  <td className="px-2 py-2 font-mono text-xs text-zinc-500 whitespace-nowrap">
+                    {formatDateTime(item.제출일시)}
                   </td>
-                  <td className="px-3 py-3 font-mono text-zinc-300 whitespace-nowrap">
+                  <td className="px-2 py-2 font-mono text-xs text-zinc-400 whitespace-nowrap">
                     {item.거래일자}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <td className="px-2 py-2 whitespace-nowrap">
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${
                       item.거래구분 === '입고' 
                         ? 'bg-blue-500/10 text-blue-400' 
                         : 'bg-orange-500/10 text-orange-400'
                     }`}>
                       {item.거래구분 === '입고' 
-                        ? <ArrowDownCircle size={12} /> 
-                        : <ArrowUpCircle size={12} />
+                        ? <ArrowDownCircle size={10} /> 
+                        : <ArrowUpCircle size={10} />
                       }
                       {item.거래구분}
                     </span>
                   </td>
-                  <td className="px-3 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                  <td className="px-2 py-2">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
                       {item.구분명}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-zinc-100 max-w-[280px]">
+                  <td className="px-2 py-2 text-zinc-100 text-sm max-w-[200px]">
                     <div className="truncate" title={item["품목명[규격]"]}>
                       {item["품목명[규격]"]}
                     </div>
-                    {(item.비고 || item.품목코드) && (
-                      <div className="text-xs text-zinc-500 mt-0.5 truncate" title={[item.품목코드, item.비고].filter(Boolean).join(' / ')}>
-                        {[item.품목코드, item.비고].filter(Boolean).join(' / ')}
+                    {item.품목코드 && (
+                      <div className="text-xs text-zinc-600 truncate">
+                        {item.품목코드}
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-zinc-300 max-w-[150px]">
+                  <td className="px-2 py-2 text-zinc-300 text-sm max-w-[100px]">
                     <div className="truncate">{item.거래처명}</div>
                     {item.적요 && (
-                      <div className="text-xs text-zinc-500 mt-0.5 truncate" title={item.적요}>
+                      <div className="text-xs text-zinc-600 truncate" title={item.적요}>
                         {item.적요}
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-zinc-400 whitespace-nowrap">
+                  <td className="px-2 py-2 text-zinc-400 text-sm whitespace-nowrap">
                     {item.담당자 || '-'}
                   </td>
-                  <td className="px-3 py-3 text-right font-mono">
+                  <td className="px-2 py-2 text-right font-mono text-sm">
                     <span className={item.거래구분 === '입고' ? 'text-blue-400' : 'text-orange-400'}>
                       {item.거래구분 === '입고' ? '+' : '-'}{formatNumber(item.거래수량)}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-right font-mono text-zinc-400 whitespace-nowrap">
+                  <td className="px-2 py-2 text-right font-mono text-xs text-zinc-500 whitespace-nowrap">
                     {formatPrice(item.단가)}
                   </td>
-                  <td className="px-3 py-3 text-right font-mono text-zinc-300 whitespace-nowrap">
+                  <td className="px-2 py-2 text-right font-mono text-sm text-zinc-300 whitespace-nowrap">
                     {formatAmount(item.금액)}
                   </td>
-                  <td className="px-3 py-3 text-center text-xs font-mono">
-                    <span className="text-zinc-500">{item["거래 전 재고"]}</span>
-                    <span className="text-zinc-600 mx-1">→</span>
+                  <td className="px-2 py-2 text-center text-xs font-mono whitespace-nowrap">
+                    <span className="text-zinc-600">{item["거래 전 재고"]}</span>
+                    <span className="text-zinc-700 mx-0.5">→</span>
                     <span className="text-agent-cyan">{item["거래 후 재고"]}</span>
                   </td>
                 </tr>
