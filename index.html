@@ -46,6 +46,28 @@
       ::-webkit-scrollbar-track { background: #050506; }
       ::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 10px; }
       ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+      
+      /* Mobile Tab Bar Animation */
+      @keyframes slide-up {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .animate-slide-up {
+        animation: slide-up 0.25s ease-out;
+      }
+      
+      /* Safe area for mobile devices */
+      .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      
+      /* PWA-like touch behavior */
+      @media (max-width: 1023px) {
+        * {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+      }
     </style>
   <script type="importmap">
 {

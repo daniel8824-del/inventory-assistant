@@ -6,6 +6,7 @@ import StockTable from './components/StockTable';
 import NewItemsTable from './components/NewItemsTable';
 import DealHistoryTable from './components/DealHistoryTable';
 import ChatPanel from './components/ChatPanel';
+import MobileTabBar from './components/MobileTabBar';
 import { StockItem, DealItem } from './types';
 import { fetchStockData, fetchDealData, fetchGoogleSheetData, fetchInternalContacts, DataSourceType, ContactItem, InternalContact, subscribeToStockChanges, subscribeToDealChanges, unsubscribeChannel } from './services/api';
 import ContactsTable from './components/ContactsTable';
@@ -159,7 +160,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[radial-gradient(circle_at_50%_0%,#0c0c0e_0%,#020203_100%)]">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 lg:pb-8 bg-[radial-gradient(circle_at_50%_0%,#0c0c0e_0%,#020203_100%)]">
           <DashboardHeader lastUpdated={lastUpdated} onRefresh={fetchData} toggleChat={() => setIsMobileChatOpen(!isMobileChatOpen)} />
           
           {/* Page Content based on currentPage */}
@@ -247,6 +248,14 @@ export default function App() {
          </div>
         <ChatPanel />
       </div>
+
+      {/* Mobile Tab Bar - Only visible on mobile */}
+      <MobileTabBar 
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        onChatToggle={() => setIsMobileChatOpen(!isMobileChatOpen)}
+        isChatOpen={isMobileChatOpen}
+      />
     </div>
   );
 }

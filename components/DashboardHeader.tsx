@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, MessageCircle } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 interface DashboardHeaderProps {
   lastUpdated: Date;
   onRefresh: () => void;
-  toggleChat: () => void;
+  toggleChat?: () => void;  // Optional - used by MobileTabBar now
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ lastUpdated, onRefresh, toggleChat }) => {
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ lastUpdated, onRefresh }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -30,31 +30,24 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ lastUpdated, onRefres
   };
 
   return (
-    <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 mb-6 md:mb-8">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-white mb-1">Inventory Assistant</h1>
-        <p className="text-sm text-zinc-500">LED 조명 부품 재고 관리 시스템</p>
+        <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-white mb-0.5 md:mb-1">Inventory Assistant</h1>
+        <p className="text-xs md:text-sm text-zinc-500">LED 조명 부품 재고 관리 시스템</p>
       </div>
 
-      <div className="flex flex-col items-end gap-3">
+      <div className="flex flex-col items-start md:items-end gap-2 md:gap-3">
         <div className="flex items-center gap-3">
-           {/* Mobile Chat Toggle */}
-          <button 
-            onClick={toggleChat}
-            className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-full bg-agent-cyan/10 border border-agent-cyan/20 text-agent-cyan text-xs font-mono"
-          >
-            <MessageCircle size={14} />
-            <span>CHAT</span>
-          </button>
-          
           <div className="hidden md:block font-mono text-xs text-agent-cyan bg-agent-cyan/5 px-4 py-1.5 rounded-full border border-agent-cyan/10">
             {formatDate(currentTime)} KST
           </div>
         </div>
         <div className="text-[10px] text-zinc-600 font-mono flex items-center gap-2">
-          LAST SYNC: {formatDate(lastUpdated)}
-          <button onClick={onRefresh} className="hover:text-agent-cyan transition-colors">
-            <RefreshCw size={10} />
+          <span className="hidden sm:inline">LAST SYNC:</span>
+          <span className="sm:hidden">SYNC:</span>
+          {formatDate(lastUpdated)}
+          <button onClick={onRefresh} className="hover:text-agent-cyan transition-colors p-1">
+            <RefreshCw size={12} />
           </button>
         </div>
       </div>
