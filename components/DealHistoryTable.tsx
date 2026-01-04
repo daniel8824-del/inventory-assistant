@@ -1,44 +1,59 @@
 import React, { useState, useMemo } from 'react';
 import { DealItem } from '../types';
-import { Loader2, Cloud, Cpu, Search, Filter, ChevronDown, X, ArrowDownCircle, ArrowUpCircle, TrendingUp } from 'lucide-react';
+import { Loader2, Cloud, Cpu, Search, X, ArrowDownCircle, ArrowUpCircle, TrendingUp, History } from 'lucide-react';
 import { DataSourceType } from '../services/api';
-import { getCategoryOrder, TARGET_CATEGORIES } from '../constants';
+import { getCategoryOrder, TARGET_CATEGORIES, ECOB_TARGET_CATEGORIES, getEcobCategoryOrder } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DealHistoryTableProps {
   data: DealItem[];
   loading: boolean;
   dataSource: DataSourceType;
+  sourceType?: 'k1' | 'ecob'; // K1 또는 에코비 구분
 }
 
 type SortField = '제출일시' | '거래일자' | '구분명' | '품목명[규격]' | '거래구분' | '거래수량' | '단가' | '금액' | '거래처명';
 type SortOrder = 'asc' | 'desc';
 
-const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, dataSource }) => {
+const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, dataSource, sourceType = 'k1' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());  // 다중 선택
   const [selectedDealTypes, setSelectedDealTypes] = useState<Set<string>>(new Set());    // 입고/출고/생산 다중 선택
   const [sortField, setSortField] = useState<SortField>('제출일시');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   
-  // 기간 필터 - 분리된 상태
+  // sourceType에 따라 카테고리 목록 및 정렬 함수 선택
+  const targetCategories = sourceType === 'ecob' ? ECOB_TARGET_CATEGORIES : TARGET_CATEGORIES;
+  const categoryOrderFn = sourceType === 'ecob' ? getEcobCategoryOrder : getCategoryOrder;
+  
+  // 기간 필터
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState<string>(String(now.getFullYear()));
-  const [selectedQuarter, setSelectedQuarter] = useState<string>('');  // Q1, Q2, Q3, Q4
-  const [selectedMonth, setSelectedMonth] = useState<string>(String(now.getMonth() + 1).padStart(2, '0'));  // 01~12
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('');  // Q1, Q2, Q3, Q4 (월과 상호 배타)
+  const [selectedMonth, setSelectedMonth] = useState<string>(String(now.getMonth() + 1).padStart(2, '0'));  // 01~12 (분기와 상호 배타)
 
-  // 데이터에서 연도 목록 추출
-  const availableYears = useMemo(() => {
-    const years = new Set<string>();
-    data.forEach(item => {
-      const date = item.거래일자 || item.제출일시;
-      if (date && date.length >= 4) {
-        years.add(date.substring(0, 4));
-      }
-    });
-    return Array.from(years).sort().reverse();
-  }, [data]);
+  // 연도 목록 (2025, 2026만)
+  const availableYears = ['2026', '2025'];
+
+  // 분기 선택 (월 해제)
+  const handleQuarterSelect = (q: string) => {
+    if (selectedQuarter === q) {
+      setSelectedQuarter('');
+    } else {
+      setSelectedQuarter(q);
+      setSelectedMonth(''); // 월 해제
+    }
+  };
+
+  // 월 선택 (분기 해제)
+  const handleMonthSelect = (m: string) => {
+    if (selectedMonth === m) {
+      setSelectedMonth('');
+    } else {
+      setSelectedMonth(m);
+      setSelectedQuarter(''); // 분기 해제
+    }
+  };
 
   // 거래구분 토글
   const toggleDealType = (type: string) => {
@@ -127,8 +142,8 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
       } else if (sortField === '거래일자') {
         comparison = (a.거래일자 || '').localeCompare(b.거래일자 || '');
       } else if (sortField === '구분명') {
-        const catOrderA = getCategoryOrder(a.구분명 || '');
-        const catOrderB = getCategoryOrder(b.구분명 || '');
+        const catOrderA = categoryOrderFn(a.구분명 || '');
+        const catOrderB = categoryOrderFn(b.구분명 || '');
         comparison = catOrderA - catOrderB;
       } else if (sortField === '거래수량' || sortField === '금액' || sortField === '단가') {
         const aVal = a[sortField] || 0;
@@ -184,15 +199,14 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
       categoryMap[category] += amount;
     });
 
-    // 차트 데이터로 변환 (TARGET_CATEGORIES 순서대로, 금액 있는 것만)
-    return TARGET_CATEGORIES
-      .filter(cat => categoryMap[cat] && categoryMap[cat] > 0)
+    // 차트 데이터로 변환 (전체 카테고리 표시, 금액 없으면 0)
+    return targetCategories
       .map(cat => ({
         name: cat.length > 10 ? cat.substring(0, 10) + '...' : cat,
         fullName: cat,
         금액: categoryMap[cat] || 0,
       }));
-  }, [filteredData]);
+  }, [filteredData, targetCategories]);
 
   // 카테고리별 색상 (차트용)
   const CHART_COLORS: { [key: string]: string } = useMemo(() => {
@@ -204,21 +218,21 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
       '#7C3AED', '#2DD4BF'
     ];
     const colorMap: { [key: string]: string } = {};
-    TARGET_CATEGORIES.forEach((cat, idx) => {
+    targetCategories.forEach((cat, idx) => {
       colorMap[cat] = colors[idx % colors.length];
     });
     return colorMap;
-  }, []);
+  }, [targetCategories]);
 
   const formatNumber = (num: number) => num.toLocaleString('ko-KR');
   const formatPrice = (num: number) => num.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const formatAmount = (num: number) => Math.abs(num).toLocaleString('ko-KR');
   
-  // 제출일시 포맷팅 (2025-12-17T21:19:00 → 2025-12-17 21:19)
+  // 제출일시 포맷팅 (2025-12-17T21:19:00 → { date: '2025-12-17', time: '21:19' })
   const formatDateTime = (dateStr: string | undefined) => {
-    if (!dateStr) return '-';
-    // 날짜 + 시:분 표시 (초 제외)
-    return dateStr.replace('T', ' ').substring(0, 16);
+    if (!dateStr) return { date: '-', time: '' };
+    const parts = dateStr.replace('T', ' ').substring(0, 16).split(' ');
+    return { date: parts[0] || '-', time: parts[1] || '' };
   };
 
   // 차트 Y축 - 만단위, 억단위 표시
@@ -259,13 +273,20 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
     setSearchTerm('');
   };
 
-  // 활성 필터 개수
-  const activeFilterCount = selectedCategories.size + selectedDealTypes.size + 
-    (selectedQuarter ? 1 : 0) + (selectedMonth !== String(now.getMonth() + 1).padStart(2, '0') ? 1 : 0);
+  // 활성 필터 개수 (기본 상태: 현재 연도, 현재 월, 분기 없음, 거래구분/구분명 없음)
+  const defaultYear = String(now.getFullYear());
+  const defaultMonth = String(now.getMonth() + 1).padStart(2, '0');
+  
+  const activeFilterCount = 
+    (selectedYear !== defaultYear ? 1 : 0) +
+    (selectedQuarter ? 1 : 0) +  // 분기가 선택되었으면
+    (selectedMonth && selectedMonth !== defaultMonth ? 1 : 0) +  // 월이 기본값이 아니면
+    selectedCategories.size + 
+    selectedDealTypes.size;
 
   if (loading) {
     return (
-      <div className="bg-bg-card border border-border rounded-2xl p-12 flex items-center justify-center">
+      <div className="bg-bg-card border border-border rounded-xl p-12 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-agent-cyan animate-spin" />
       </div>
     );
@@ -273,109 +294,24 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
 
   return (
     <div className="space-y-6">
-      {/* 구분명별 매출 차트 */}
-      <div className="bg-bg-card border border-border rounded-2xl p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="text-orange-400" size={18} />
-            <h3 className="text-sm font-bold text-zinc-300">구분명별 매출 현황 (출고)</h3>
-            <span className="text-xs text-orange-400/80 font-medium bg-orange-500/10 px-2 py-0.5 rounded">{getPeriodLabel()}</span>
-          </div>
-          <span className="text-xs text-zinc-500">
-            총 <span className="text-orange-400 font-mono font-bold">{categorySalesData.reduce((sum, d) => sum + d.금액, 0).toLocaleString()}</span>원
-          </span>
-        </div>
-        
-        {/* 차트 월별 빠른 필터 */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border/50">
-          <span className="text-xs text-zinc-500">월 선택:</span>
-          {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
-            <button
-              key={m}
-              onClick={() => setSelectedMonth(selectedMonth === m ? '' : m)}
-              className={`px-2 py-0.5 text-xs rounded transition-all ${
-                selectedMonth === m
-                  ? 'bg-orange-500 text-white font-bold'
-                  : 'bg-zinc-800/50 text-zinc-500 hover:bg-zinc-700'
-              }`}
-            >
-              {parseInt(m)}월
-            </button>
-          ))}
-          {selectedMonth && (
-            <button
-              onClick={() => setSelectedMonth('')}
-              className="text-xs text-zinc-500 hover:text-white ml-2"
-            >
-              전체
-            </button>
-          )}
-        </div>
-        
-        {categorySalesData.length > 0 ? (
-          <div className="h-[400px] overflow-x-auto">
-            <div style={{ minWidth: categorySalesData.length * 50 + 100 }}>
-              <ResponsiveContainer width="100%" height={380}>
-                <BarChart 
-                  data={categorySalesData} 
-                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-                >
-                  <XAxis 
-                    dataKey="name"
-                    tick={{ fill: '#a1a1aa', fontSize: 10 }}
-                    angle={-45}
-                    textAnchor="end"
-                    interval={0}
-                    height={80}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#71717a', fontSize: 10 }}
-                    tickFormatter={formatChartAmount}
-                    width={80}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                  <Bar 
-                    dataKey="금액" 
-                    radius={[4, 4, 0, 0]}
-                  >
-                    {categorySalesData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={CHART_COLORS[entry.fullName] || '#6B7280'} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+      {/* 1. 검색 및 필터 패널 (맨 위) */}
+      <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-border bg-bg-card/50 space-y-4">
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-bold text-orange-400">Deal History</h3>
+              <span className="flex items-center gap-1.5 text-[10px] text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded border border-border">
+                <History size={10} className="text-orange-400" />
+                DEAL
+              </span>
+              <span className="text-[10px] font-medium bg-orange-500/20 text-orange-400 px-2 py-1 rounded border border-orange-500/30">
+                거래 {filteredData.length.toLocaleString()}건
+              </span>
             </div>
           </div>
-        ) : (
-          <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm">
-            선택한 기간에 출고 데이터가 없습니다
-          </div>
-        )}
-      </div>
 
-      <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
-        {/* Header */}
-        <div className="p-4 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-bold text-white">Deal History</h3>
-          <div className="flex items-center gap-1.5 text-xs font-mono">
-            {dataSource === 'SUPABASE' ? (
-              <><Cloud size={12} className="text-status-safe" /><span className="text-status-safe">SUPABASE</span></>
-            ) : (
-              <><Cpu size={12} className="text-status-hold" /><span className="text-status-hold">SIMULATION</span></>
-            )}
-          </div>
-          <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
-            {filteredData.length} / {data.length} 건
-          </span>
-        </div>
-        
-        {/* Search & Filter */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
+          {/* Search */}
+          <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
@@ -390,37 +326,14 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
               </button>
             )}
           </div>
-          
-          {/* Filter Toggle */}
-          <button 
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
-              isFilterOpen || activeFilterCount > 0
-                ? 'bg-agent-cyan/10 border-agent-cyan text-agent-cyan' 
-                : 'bg-bg-body border-border text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Filter size={14} />
-            <span className="text-sm hidden sm:inline">고급검색</span>
-            {activeFilterCount > 0 && (
-              <span className="bg-agent-cyan text-black text-xs font-bold px-1.5 rounded">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
         </div>
-      </div>
 
-      {/* Advanced Filter Panel */}
-      {isFilterOpen && (
-        <div className="p-4 border-b border-border bg-bg-body/50 space-y-4">
-          {/* 기간 필터 - 연도, 분기, 월 분리 */}
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-xs text-zinc-400 font-medium w-16">기간</span>
-            
-            {/* 연도 */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">연도:</span>
+        {/* Filter Panel (항상 표시) */}
+        <div className="p-4 space-y-3">
+            {/* 기간 필터 - 1행: 연도 + 분기 + 월 */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs text-zinc-400 font-medium">기간</span>
+              
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
@@ -430,35 +343,31 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
                   <option key={year} value={year}>{year}년</option>
                 ))}
               </select>
-            </div>
 
-            {/* 분기 */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-zinc-500 mr-1">분기:</span>
-              {['Q1', 'Q2', 'Q3', 'Q4'].map(q => (
-                <button
-                  key={q}
-                  onClick={() => setSelectedQuarter(selectedQuarter === q ? '' : q)}
-                  className={`px-2.5 py-1 text-xs rounded-md transition-all ${
-                    selectedQuarter === q
-                      ? 'bg-agent-cyan text-black font-bold'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                  }`}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+              <div className="flex items-center gap-1">
+                {['Q1', 'Q2', 'Q3', 'Q4'].map(q => (
+                  <button
+                    key={q}
+                    onClick={() => handleQuarterSelect(q)}
+                    className={`px-2 py-1 text-xs rounded-md transition-all ${
+                      selectedQuarter === q
+                        ? 'bg-agent-cyan text-black font-bold'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
 
-            {/* 월 */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-zinc-500 mr-1">월:</span>
-              <div className="flex flex-wrap gap-1">
+              <div className="h-4 w-px bg-zinc-700"></div>
+
+              <div className="flex items-center gap-1">
                 {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
                   <button
                     key={m}
-                    onClick={() => setSelectedMonth(selectedMonth === m ? '' : m)}
-                    className={`px-2 py-1 text-xs rounded-md transition-all ${
+                    onClick={() => handleMonthSelect(m)}
+                    className={`px-1.5 py-1 text-xs rounded-md transition-all ${
                       selectedMonth === m
                         ? 'bg-orange-500 text-white font-bold'
                         : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
@@ -469,56 +378,55 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* 거래구분 필터 */}
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-xs text-zinc-400 font-medium w-16">거래구분</span>
-            <div className="flex gap-2">
-              {['입고', '출고', '생산'].map(type => (
-                <button
-                  key={type}
-                  onClick={() => toggleDealType(type)}
-                  className={`px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 ${
-                    selectedDealTypes.has(type)
-                      ? type === '입고' 
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                        : type === '출고'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-                        : 'bg-green-500/20 text-green-400 border border-green-500/50'
-                      : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700 hover:border-zinc-600'
-                  }`}
-                >
-                  {type === '입고' && <ArrowDownCircle size={12} />}
-                  {type === '출고' && <ArrowUpCircle size={12} />}
-                  {type === '생산' && <span className="text-xs">⚙</span>}
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 구분명 필터 - 22개 전체 */}
-          <div className="flex flex-wrap items-start gap-4">
-            <span className="text-xs text-zinc-400 font-medium w-16 pt-1">구분명</span>
-            <div className="flex-1">
-              <div className="flex flex-wrap gap-1.5">
-                {TARGET_CATEGORIES.map(cat => (
+            {/* 거래구분 필터 */}
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-xs text-zinc-400 font-medium w-16">거래구분</span>
+              <div className="flex gap-2">
+                {(sourceType === 'ecob' ? ['입고', '출고'] : ['입고', '출고', '생산']).map(type => (
                   <button
-                    key={cat}
-                    onClick={() => toggleCategory(cat)}
-                    className={`px-2 py-1 text-xs rounded-md transition-all ${
-                      selectedCategories.has(cat)
-                        ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
-                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:border-zinc-600'
+                    key={type}
+                    onClick={() => toggleDealType(type)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 ${
+                      selectedDealTypes.has(type)
+                        ? type === '입고' 
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
+                          : type === '출고'
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                          : 'bg-green-500/20 text-green-400 border border-green-500/50'
+                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700 hover:border-zinc-600'
                     }`}
                   >
-                    {cat.length > 12 ? cat.substring(0, 12) + '..' : cat}
+                    {type === '입고' && <ArrowDownCircle size={12} />}
+                    {type === '출고' && <ArrowUpCircle size={12} />}
+                    {type === '생산' && <span className="text-xs">⚙</span>}
+                    {type}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
+
+            {/* 구분명 필터 */}
+            <div className="flex flex-wrap items-start gap-4">
+              <span className="text-xs text-zinc-400 font-medium w-16 pt-1">구분명</span>
+              <div className="flex-1">
+                <div className="flex flex-wrap gap-1.5">
+                  {targetCategories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => toggleCategory(cat)}
+                      className={`px-2 py-1 text-xs rounded-md transition-all ${
+                        selectedCategories.has(cat)
+                          ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
+                          : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:border-zinc-600'
+                      }`}
+                    >
+                      {cat.length > 12 ? cat.substring(0, 12) + '..' : cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
           {/* 필터 초기화 */}
           {activeFilterCount > 0 && (
@@ -533,66 +441,69 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
             </div>
           )}
         </div>
-      )}
+      </div>
+
+      {/* 2. Deal History 테이블 */}
+      <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full">
           <thead>
-            <tr className="bg-bg-body/50 text-left text-xs">
+            <tr className="bg-bg-body/50 text-xs">
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('제출일시')}
               >
                 제출일시<SortIndicator field="제출일시" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래일자')}
               >
                 거래일자<SortIndicator field="거래일자" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래구분')}
               >
                 구분<SortIndicator field="거래구분" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-left cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('구분명')}
               >
                 구분명<SortIndicator field="구분명" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white"
+                className="px-2 py-2 font-semibold text-zinc-400 text-left cursor-pointer hover:text-white"
                 onClick={() => handleSort('품목명[규격]')}
               >
                 품목명[규격]<SortIndicator field="품목명[규격]" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래처명')}
               >
                 거래처<SortIndicator field="거래처명" />
               </th>
-              <th className="px-2 py-2 font-semibold text-zinc-400 whitespace-nowrap">
+              <th className="px-2 py-2 font-semibold text-zinc-400 text-center whitespace-nowrap">
                 담당자
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('거래수량')}
               >
                 수량<SortIndicator field="거래수량" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('단가')}
               >
                 단가<SortIndicator field="단가" />
               </th>
               <th 
-                className="px-2 py-2 font-semibold text-zinc-400 text-right cursor-pointer hover:text-white whitespace-nowrap"
+                className="px-2 py-2 font-semibold text-zinc-400 text-center cursor-pointer hover:text-white whitespace-nowrap"
                 onClick={() => handleSort('금액')}
               >
                 금액<SortIndicator field="금액" />
@@ -605,15 +516,16 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
           <tbody className="divide-y divide-border">
             {filteredData.length > 0 ? (
               filteredData.map((item, idx) => (
-                <tr key={item.id || idx} className="hover:bg-zinc-900/50 transition-colors">
-                  <td className="px-2 py-2 font-mono text-xs text-zinc-500 whitespace-nowrap">
-                    {formatDateTime(item.제출일시)}
+                <tr key={item.id || idx} className="hover:bg-zinc-900/50 transition-colors align-middle">
+                  <td className="px-2 py-2 font-mono text-[9px] text-zinc-500 text-center" style={{ width: '75px' }}>
+                    <div>{formatDateTime(item.제출일시).date}</div>
+                    <div className="text-zinc-600">{formatDateTime(item.제출일시).time}</div>
                   </td>
-                  <td className="px-2 py-2 font-mono text-xs text-zinc-400 whitespace-nowrap">
+                  <td className="px-2 py-2 font-mono text-[9px] text-zinc-400 text-center whitespace-nowrap">
                     {item.거래일자}
                   </td>
-                  <td className="px-2 py-2 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                  <td className="px-2 py-2 text-center whitespace-nowrap">
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                       item.거래구분 === '입고' 
                         ? 'bg-blue-500/10 text-blue-400' 
                         : 'bg-orange-500/10 text-orange-400'
@@ -625,44 +537,44 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
                       {item.거래구분}
                     </span>
                   </td>
-                  <td className="px-2 py-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                  <td className="px-2 py-2 text-left whitespace-nowrap">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 whitespace-nowrap">
                       {item.구분명}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-zinc-100 text-sm max-w-[200px]">
-                    <div className="truncate" title={item["품목명[규격]"]}>
+                  <td className="px-2 py-2 text-zinc-100 text-xs text-left max-w-[280px]">
+                    <div className="line-clamp-3 leading-snug break-keep" title={item["품목명[규격]"]}>
                       {item["품목명[규격]"]}
                     </div>
                     {item.품목코드 && (
-                      <div className="text-xs text-zinc-600 truncate">
+                      <div className="text-[9px] text-zinc-600 truncate mt-0.5">
                         {item.품목코드}
                       </div>
                     )}
                   </td>
-                  <td className="px-2 py-2 text-zinc-300 text-sm max-w-[100px]">
+                  <td className="px-2 py-2 text-zinc-300 text-[10px] text-center max-w-[100px]">
                     <div className="truncate">{item.거래처명}</div>
                     {item.적요 && (
-                      <div className="text-xs text-zinc-600 truncate" title={item.적요}>
+                      <div className="text-[9px] text-zinc-600 truncate" title={item.적요}>
                         {item.적요}
                       </div>
                     )}
                   </td>
-                  <td className="px-2 py-2 text-zinc-400 text-sm whitespace-nowrap">
+                  <td className="px-2 py-2 text-zinc-400 text-[10px] text-center whitespace-nowrap">
                     {item.담당자 || '-'}
                   </td>
-                  <td className="px-2 py-2 text-right font-mono text-sm">
+                  <td className="px-2 py-2 text-center font-mono text-xs">
                     <span className={item.거래구분 === '입고' ? 'text-blue-400' : 'text-orange-400'}>
                       {item.거래구분 === '입고' ? '+' : '-'}{formatNumber(item.거래수량)}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-right font-mono text-xs text-zinc-500 whitespace-nowrap">
+                  <td className="px-2 py-2 text-center font-mono text-xs text-zinc-500 whitespace-nowrap">
                     {formatPrice(item.단가)}
                   </td>
-                  <td className="px-2 py-2 text-right font-mono text-sm text-zinc-300 whitespace-nowrap">
+                  <td className="px-2 py-2 text-center font-mono text-xs text-zinc-300 whitespace-nowrap">
                     {formatAmount(item.금액)}
                   </td>
-                  <td className="px-2 py-2 text-center text-xs font-mono whitespace-nowrap">
+                  <td className="px-2 py-2 text-center text-[9px] font-mono whitespace-nowrap">
                     <span className="text-zinc-600">{item["거래 전 재고"]}</span>
                     <span className="text-zinc-700 mx-0.5">→</span>
                     <span className="text-agent-cyan">{item["거래 후 재고"]}</span>
@@ -697,6 +609,63 @@ const DealHistoryTable: React.FC<DealHistoryTableProps> = ({ data, loading, data
               <span className="text-zinc-500">총 거래금액:</span>
               <span className="font-mono text-white font-bold">{formatAmount(totals.totalAmount)}</span>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. 구분명별 매출 차트 (하단) */}
+      <div className="bg-bg-card border border-border rounded-xl p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="text-orange-400" size={18} />
+            <h3 className="text-sm font-bold text-zinc-300">구분명별 매출 현황 (출고)</h3>
+            <span className="text-xs text-orange-400/80 font-medium bg-orange-500/10 px-2 py-0.5 rounded">{getPeriodLabel()}</span>
+          </div>
+          <span className="text-xs text-zinc-500">
+            총 <span className="text-orange-400 font-mono font-bold">{categorySalesData.reduce((sum, d) => sum + d.금액, 0).toLocaleString()}</span>원
+          </span>
+        </div>
+        
+        {categorySalesData.length > 0 ? (
+          <div className="h-[400px] overflow-x-auto">
+            <div style={{ minWidth: categorySalesData.length * 50 + 100 }}>
+              <ResponsiveContainer width="100%" height={380}>
+                <BarChart 
+                  data={categorySalesData} 
+                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                >
+                  <XAxis 
+                    dataKey="name"
+                    tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                    angle={-45}
+                    textAnchor="end"
+                    interval={0}
+                    height={80}
+                  />
+                  <YAxis 
+                    tick={{ fill: '#71717a', fontSize: 10 }}
+                    tickFormatter={formatChartAmount}
+                    width={80}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={false} />
+                  <Bar 
+                    dataKey="금액" 
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {categorySalesData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={CHART_COLORS[entry.fullName] || '#6B7280'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ) : (
+          <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm">
+            선택한 기간에 출고 데이터가 없습니다
           </div>
         )}
       </div>

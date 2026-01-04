@@ -1,6 +1,9 @@
 import React from 'react';
 import { LayoutDashboard, Database, History, MessageCircle, MoreHorizontal, Sparkles, Users, CreditCard, Users2, Package, ShoppingCart, ExternalLink, X } from 'lucide-react';
 import { PageType } from '../App';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { N8N_FORM_URLS } from '../constants';
 
 interface MobileTabBarProps {
   currentPage: PageType;
@@ -9,13 +12,13 @@ interface MobileTabBarProps {
   isChatOpen: boolean;
 }
 
-const FORM_URLS = {
-  inventory: 'https://daniel8824.app.n8n.cloud/form/inventory',
-  deal: 'https://daniel8824.app.n8n.cloud/form/deal',
-};
-
 const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentPage, onPageChange, onChatToggle, isChatOpen }) => {
   const [isMoreOpen, setIsMoreOpen] = React.useState(false);
+  const { hasRole } = useAuth();
+  const { isDark } = useTheme();
+  
+  // viewer가 아닌 경우에만 Quick Actions, 챗봇 사용 가능
+  const canEdit = hasRole(['admin', 'manager']);
 
   const mainTabs = [
     { id: 'dashboard' as PageType, label: '대시보드', icon: LayoutDashboard },
@@ -31,7 +34,9 @@ const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentPage, onPageChange, 
   ];
 
   const openForm = (formType: 'inventory' | 'deal') => {
-    window.open(FORM_URLS[formType], '_blank');
+    const themeParam = isDark ? 'dark' : 'light';
+    const url = `${N8N_FORM_URLS[formType]}?theme=${themeParam}`;
+    window.open(url, '_blank');
     setIsMoreOpen(false);
   };
 
@@ -82,28 +87,30 @@ const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentPage, onPageChange, 
               ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="border-t border-border pt-4">
-              <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider mb-3 block">빠른 작업</span>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => openForm('inventory')}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                >
-                  <Package size={18} />
-                  <span className="text-sm font-medium">재고 등록</span>
-                  <ExternalLink size={12} />
-                </button>
-                <button 
-                  onClick={() => openForm('deal')}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/30"
-                >
-                  <ShoppingCart size={18} />
-                  <span className="text-sm font-medium">거래 등록</span>
-                  <ExternalLink size={12} />
-                </button>
+            {/* Quick Actions - admin, manager만 표시 */}
+            {canEdit && (
+              <div className="border-t border-border pt-4">
+                <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider mb-3 block">빠른 작업</span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => openForm('inventory')}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                  >
+                    <Package size={18} />
+                    <span className="text-sm font-medium">재고 등록</span>
+                    <ExternalLink size={12} />
+                  </button>
+                  <button 
+                    onClick={() => openForm('deal')}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/30"
+                  >
+                    <ShoppingCart size={18} />
+                    <span className="text-sm font-medium">거래 등록</span>
+                    <ExternalLink size={12} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -131,7 +138,7 @@ const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentPage, onPageChange, 
             </button>
           ))}
 
-          {/* Chat Button */}
+          {/* Chat Button - 모든 사용자에게 표시 */}
           <button
             onClick={onChatToggle}
             className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all ${

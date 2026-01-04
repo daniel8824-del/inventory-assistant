@@ -3,7 +3,11 @@ import { Send, Bot, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { CHAT_WEBHOOK_URL } from '../constants';
 import { ChatMessage, N8nResponse } from '../types';
 
-const ChatPanel = () => {
+interface ChatPanelProps {
+  canSendMessage?: boolean;
+}
+
+const ChatPanel: React.FC<ChatPanelProps> = ({ canSendMessage = true }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -131,7 +135,7 @@ const ChatPanel = () => {
   return (
     <div className="flex flex-col h-full bg-[#080809] border-l border-border shadow-2xl lg:shadow-none">
       {/* Header */}
-      <div className="p-6 border-b border-border flex items-center gap-4 bg-[#080809]">
+      <div className="p-6 flex items-center gap-4 bg-[#080809]">
         <div className="w-10 h-10 rounded-xl bg-agent-cyan flex items-center justify-center text-black shadow-[0_0_15px_rgba(6,182,212,0.2)]">
           <Bot size={24} strokeWidth={2.5} />
         </div>
@@ -178,6 +182,7 @@ const ChatPanel = () => {
 
       {/* Input Area */}
       <div className="p-5 border-t border-border bg-[#080809]">
+        {canSendMessage ? (
         <div className="bg-[#111113] border border-border rounded-xl p-3 focus-within:border-agent-cyan/50 transition-colors">
           <textarea
             value={inputValue}
@@ -221,9 +226,13 @@ const ChatPanel = () => {
             </button>
           </div>
         </div>
-        <div className="text-center mt-3">
-           <span className="text-[10px] text-zinc-700 font-mono tracking-wider">DATAWAVE ENGINE | SESSION ACTIVE</span>
+        ) : (
+          <div className="bg-[#111113] border border-border rounded-xl p-4 text-center">
+            <p className="text-zinc-500 text-sm">
+              🔒 메시지 전송은 관리자 권한이 필요합니다
+            </p>
         </div>
+        )}
       </div>
     </div>
   );

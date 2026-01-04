@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>K-ONE INV-AGENT | LED Supply Chain Intelligence</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,14 +40,42 @@
       }
     </script>
     <style>
-      body {
-        background-color: #020203;
-        color: #f4f4f5;
+      /* Theme Variables - Dark Mode (Default) */
+      :root {
+        --bg-body: #020203;
+        --bg-card: #0a0a0c;
+        --bg-sidebar: #050506;
+        --border: #1f1f23;
+        --text-primary: #f4f4f5;
+        --text-secondary: #a1a1aa;
+        --text-muted: #71717a;
       }
+      
+      /* Theme Variables - Light Mode */
+      :root.light {
+        --bg-body: #ffffff;
+        --bg-card: #ffffff;
+        --bg-sidebar: #fafafa;
+        --border: #e5e5e5;
+        --text-primary: #171717;
+        --text-secondary: #525252;
+        --text-muted: #a3a3a3;
+      }
+      
+      body {
+        background-color: var(--bg-body);
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
       ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: #050506; }
-      ::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+      ::-webkit-scrollbar-track { background: var(--bg-sidebar); }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
+      
+      :root.light ::-webkit-scrollbar-track { background: #fafafa; }
+      :root.light ::-webkit-scrollbar-thumb { background: #d4d4d4; }
+      :root.light ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
       
       /* Mobile Tab Bar Animation */
       @keyframes slide-up {
@@ -67,6 +97,208 @@
           -webkit-tap-highlight-color: transparent;
           touch-action: manipulation;
         }
+      }
+      
+      /* Light mode specific overrides */
+      :root.light .bg-bg-body { background-color: var(--bg-body) !important; }
+      :root.light .bg-bg-card { background-color: var(--bg-card) !important; }
+      :root.light .bg-bg-sidebar { background-color: var(--bg-sidebar) !important; }
+      :root.light .border-border { border-color: var(--border) !important; }
+      :root.light .text-zinc-100 { color: #171717 !important; }
+      :root.light .text-zinc-200 { color: #262626 !important; }
+      :root.light .text-zinc-300 { color: #404040 !important; }
+      :root.light .text-zinc-400 { color: #525252 !important; }
+      :root.light .text-zinc-500 { color: #737373 !important; }
+      :root.light .text-zinc-600 { color: #a3a3a3 !important; }
+      :root.light .text-white { color: #171717 !important; }
+      :root.light .bg-zinc-800 { background-color: #f5f5f5 !important; }
+      :root.light .bg-zinc-800\/50 { background-color: rgba(245, 245, 245, 0.5) !important; }
+      :root.light .bg-zinc-900 { background-color: #fafafa !important; }
+      :root.light .bg-zinc-900\/30 { background-color: #404040 !important; }
+      :root.light .bg-bg-body\/50 { background-color: #404040 !important; }
+      :root.light .bg-zinc-900\/50 { background-color: rgba(250, 250, 250, 0.5) !important; }
+      :root.light .bg-black\/40 { background-color: rgba(250, 250, 250, 0.9) !important; }
+      :root.light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.03) !important; }
+      :root.light .hover\:bg-zinc-900:hover { background-color: #f5f5f5 !important; }
+      :root.light .placeholder-zinc-600::placeholder { color: #a3a3a3 !important; }
+      
+      /* Light mode radial gradient background */
+      :root.light .bg-\[radial-gradient\(circle_at_50\%_0\%\,\#0c0c0e_0\%\,\#020203_100\%\)\] {
+        background: #ffffff !important;
+      }
+      
+      /* Light mode specific colors */
+      :root.light .bg-\[\#080809\] { background-color: #ffffff !important; }
+      :root.light .bg-\[\#111113\] { background-color: #fafafa !important; }
+      :root.light .bg-\[\#161618\] { background-color: #f5f5f5 !important; }
+      
+      /* Light mode - Card borders more visible */
+      :root.light .border-border { border-color: #e5e5e5 !important; }
+      
+      /* Light mode - Input backgrounds */
+      :root.light input, :root.light textarea, :root.light select {
+        background-color: #ffffff !important;
+        border-color: #e5e5e5 !important;
+      }
+      :root.light input:focus, :root.light textarea:focus, :root.light select:focus {
+        border-color: #06b6d4 !important;
+      }
+      
+      /* Light mode - Table headers - 밝은 배경에 진한 텍스트 */
+      :root.light .bg-bg-card\/50 { background-color: #fafafa !important; }
+      :root.light table thead { background-color: #f5f5f5 !important; }
+      :root.light table thead tr { background-color: #f5f5f5 !important; }
+      :root.light table th { color: #404040 !important; background-color: #f5f5f5 !important; border-bottom: 2px solid #e5e5e5 !important; }
+      :root.light table th.text-zinc-400 { color: #525252 !important; }
+      :root.light table th.text-zinc-500 { color: #525252 !important; }
+      :root.light thead .text-zinc-400 { color: #525252 !important; }
+      :root.light thead .text-zinc-500 { color: #525252 !important; }
+      :root.light table td { color: #262626 !important; }
+      :root.light table tbody { background-color: #ffffff !important; }
+      :root.light table tbody tr { border-color: #e5e5e5 !important; background-color: #ffffff !important; }
+      :root.light table tbody tr:hover { background-color: #fafafa !important; }
+      
+      /* Light mode - Table loading state */
+      :root.light .overflow-auto { background-color: #ffffff !important; }
+      :root.light .bg-bg-card\/80 { background-color: rgba(255, 255, 255, 0.95) !important; }
+      :root.light .overflow-x-auto { background-color: #ffffff !important; }
+      :root.light .divide-y { background-color: #ffffff !important; }
+      :root.light tbody { background-color: #ffffff !important; }
+      :root.light .divide-border\/50 { background-color: #ffffff !important; }
+      
+      /* Light mode - Table footer */
+      :root.light .bg-bg-body\/30 { background-color: #f5f5f5 !important; }
+      
+      /* Light mode - Colored badges keep their colors */
+      :root.light .text-agent-cyan { color: #0891b2 !important; }
+      :root.light .text-emerald-400 { color: #059669 !important; }
+      :root.light .text-orange-400 { color: #ea580c !important; }
+      :root.light .text-rose-400 { color: #e11d48 !important; }
+      :root.light .text-violet-400 { color: #7c3aed !important; }
+      :root.light .text-amber-400 { color: #d97706 !important; }
+      :root.light .text-cyan-400 { color: #0891b2 !important; }
+      
+      /* Light mode - Sidebar adjustments */
+      :root.light aside span { color: #262626 !important; }
+      :root.light aside .text-xs { color: #404040 !important; }
+      :root.light aside .text-sm { color: #262626 !important; }
+      :root.light aside h1 { color: #0891b2 !important; }
+      :root.light aside button span { color: #404040 !important; }
+      
+      /* Light mode - status colors remain visible */
+      :root.light .text-status-safe { color: #059669 !important; }
+      :root.light .text-status-risk { color: #e11d48 !important; }
+      
+      /* Light mode - shadows softer */
+      :root.light .shadow-lg { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important; }
+      :root.light .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important; }
+      
+      /* Light mode - Modal styles */
+      :root.light .fixed.inset-0.bg-black\/80 { background-color: rgba(0, 0, 0, 0.4) !important; }
+      :root.light .fixed.inset-0.bg-black\/60 { background-color: rgba(0, 0, 0, 0.3) !important; }
+      
+      /* Light mode - Modal content */
+      :root.light .rounded-2xl.bg-bg-sidebar,
+      :root.light .rounded-xl.bg-bg-sidebar {
+        background-color: #ffffff !important;
+        border-color: #e5e5e5 !important;
+      }
+      
+      /* Light mode - Modal close button - 심플한 테두리 스타일 */
+      :root.light .bg-zinc-800.hover\:bg-zinc-700 {
+        background-color: transparent !important;
+        border: 1px solid #d4d4d4 !important;
+        color: #525252 !important;
+      }
+      :root.light .bg-zinc-800.hover\:bg-zinc-700:hover {
+        background-color: #f5f5f5 !important;
+        border-color: #a3a3a3 !important;
+        color: #171717 !important;
+      }
+      :root.light .bg-zinc-800.hover\:bg-zinc-700.text-zinc-300,
+      :root.light .bg-zinc-800.text-zinc-300 {
+        color: #525252 !important;
+      }
+      
+      /* Light mode - Modal header/footer backgrounds */
+      :root.light .border-t.border-border.bg-bg-body\/50 {
+        background-color: #f5f5f5 !important;
+      }
+      
+      /* Light mode - Modal text colors */
+      :root.light .bg-bg-sidebar .text-white { color: #171717 !important; }
+      :root.light .bg-bg-sidebar .text-zinc-100 { color: #262626 !important; }
+      :root.light .bg-bg-sidebar .text-zinc-200 { color: #404040 !important; }
+      :root.light .bg-bg-sidebar .text-zinc-300 { color: #525252 !important; }
+      :root.light .bg-bg-sidebar .text-zinc-400 { color: #737373 !important; }
+      :root.light .bg-bg-sidebar .text-zinc-500 { color: #a3a3a3 !important; }
+      
+      /* Light mode - Modal card backgrounds */
+      :root.light .bg-bg-sidebar .bg-zinc-900\/50,
+      :root.light .bg-bg-sidebar .bg-bg-card {
+        background-color: #f5f5f5 !important;
+        border-color: #e5e5e5 !important;
+      }
+      
+      /* Light mode - ChatPanel (우측 패널) */
+      :root.light .border-l.border-border.bg-\[\#080809\] {
+        background-color: #fafafa !important;
+        border-color: #e5e5e5 !important;
+      }
+      
+      /* Light mode - ChatPanel input area */
+      :root.light .bg-\[\#111113\].border.border-border {
+        background-color: #ffffff !important;
+        border-color: #d4d4d4 !important;
+      }
+      
+      /* Light mode - ChatPanel messages */
+      :root.light .bg-\[\#161618\].border.border-border {
+        background-color: #f5f5f5 !important;
+        border-color: #e5e5e5 !important;
+      }
+      
+      /* Light mode - ChatPanel textarea */
+      :root.light .bg-\[\#111113\] textarea {
+        background-color: transparent !important;
+        color: #171717 !important;
+      }
+      :root.light .bg-\[\#111113\] textarea::placeholder {
+        color: #a3a3a3 !important;
+      }
+      
+      /* Light mode - ChatPanel send button */
+      :root.light .bg-agent-cyan.text-black {
+        background-color: #0891b2 !important;
+        color: #ffffff !important;
+      }
+      :root.light .bg-agent-cyan.text-black:hover {
+        background-color: #0e7490 !important;
+      }
+      
+      /* Light mode - ChatPanel icons */
+      :root.light .border-l .text-zinc-600 {
+        color: #737373 !important;
+      }
+      :root.light .border-l .text-zinc-600:hover {
+        color: #0891b2 !important;
+      }
+      
+      /* Light mode - Theme toggle */
+      :root.light .bg-zinc-800.border.rounded-full {
+        background-color: #e5e5e5 !important;
+        border-color: #d4d4d4 !important;
+      }
+      
+      /* Light mode - Login page */
+      :root.light .bg-gradient-to-br.from-agent-cyan\/20 {
+        background: linear-gradient(to bottom right, rgba(8, 145, 178, 0.15), rgba(124, 58, 237, 0.15)) !important;
+      }
+      :root.light .bg-agent-cyan\/5 {
+        background-color: rgba(8, 145, 178, 0.08) !important;
+      }
+      :root.light .bg-violet-500\/5 {
+        background-color: rgba(124, 58, 237, 0.08) !important;
       }
     </style>
   <script type="importmap">

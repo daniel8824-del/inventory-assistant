@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StockItem } from '../types';
-import { TARGET_CATEGORIES } from '../constants';
+import { TARGET_CATEGORIES, IS_DEV } from '../constants';
 import { Wallet, Package, AlertCircle, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -14,28 +14,20 @@ const CategorySummary: React.FC<CategorySummaryProps> = ({ data, loading }) => {
   // 사용자 요청 반영: DB에 이미 "신천등기구_조립", "세종&교은모듈" 등 표준화된 이름이 있으므로
   // 복잡한 정규식 변환 없이 있는 그대로(Exact Match) 비교합니다.
   const categoryStats = useMemo(() => {
-    // 🔍 디버깅: DB에 있는 모든 구분명과 TARGET_CATEGORIES 비교
+    // 🔍 디버깅: DB에 있는 모든 구분명과 TARGET_CATEGORIES 비교 (개발 환경에서만)
+    if (IS_DEV && data.length > 0) {
     const dbCategories: string[] = Array.from(new Set(data.map(item => item.구분명))) as string[];
     
-    TARGET_CATEGORIES.forEach(target => {
-      const found = dbCategories.includes(target);
-      if (!found) {
-        console.warn(`[CategorySummary] ❌ TARGET에 있지만 DB에 없음: "${target}"`);
-        // 유사한 항목 찾기
-        const similar = dbCategories.filter(db => 
-          db.includes(target.substring(0, 4)) || target.includes(db.substring(0, 4))
-        );
-        if (similar.length > 0) {
-          console.warn(`[CategorySummary]    → 유사 항목: ${similar.join(', ')}`);
+      const missingInDb = TARGET_CATEGORIES.filter(target => !dbCategories.includes(target));
+      const missingInTarget = dbCategories.filter(db => !TARGET_CATEGORIES.includes(db));
+      
+      if (missingInDb.length > 0) {
+        console.warn(`%c[CategorySummary] TARGET에 있지만 DB에 없음 (${missingInDb.length}개)`, 'color: #fbbf24');
         }
+      if (missingInTarget.length > 0) {
+        console.warn(`%c[CategorySummary] DB에 있지만 TARGET에 없음 (${missingInTarget.length}개)`, 'color: #fbbf24');
       }
-    });
-    
-    dbCategories.forEach(db => {
-      if (!TARGET_CATEGORIES.includes(db)) {
-        console.warn(`[CategorySummary] ⚠️ DB에 있지만 TARGET에 없음: "${db}"`);
-      }
-    });
+    }
 
     return TARGET_CATEGORIES.map(categoryName => {
       // 공백 실수 방지를 위해 앞뒤 공백만 제거(trim)하고 비교
@@ -53,11 +45,6 @@ const CategorySummary: React.FC<CategorySummaryProps> = ({ data, loading }) => {
       const totalQty = items.reduce((sum, item) => sum + (item.현재수량 || 0), 0);
       const itemCount = items.length;
       const riskCount = items.filter(item => item.상태 && item.상태.includes('위험')).length;
-
-      // 🔍 디버깅: 각 카테고리별 매칭 결과
-      if (itemCount === 0) {
-        console.log(`[CategorySummary] "${categoryName}" → 매칭 0건`);
-      }
 
       return {
         name: categoryName,
@@ -132,29 +119,19 @@ const CategorySummary: React.FC<CategorySummaryProps> = ({ data, loading }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-end pb-4 border-b border-border">
-        <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Wallet className="text-agent-cyan" size={20} />
-            Category Financial Overview
-          </h2>
-          <p className="text-xs text-zinc-500 mt-1">
-            22개 주요 카테고리별 재고 자산 현황
-          </p>
-        </div>
-        <div className="mt-4 md:mt-0 text-right">
-             <span className="text-xs text-zinc-500 block mb-1">TOTAL ASSETS</span>
-             <span className="text-3xl font-mono font-bold text-agent-cyan">
-                {formatCurrency(totalAssetValue)}
-             </span>
-        </div>
-      </div>
-
       {/* 구분명별 총금액 차트 */}
       <div className="bg-bg-card border border-border rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="text-agent-cyan" size={18} />
-          <h3 className="text-sm font-bold text-zinc-300">구분명별 재고 금액</h3>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="text-agent-cyan" size={18} />
+            <h3 className="text-sm font-bold text-zinc-300">구분명별 재고 금액</h3>
+          </div>
+          <div className="text-right">
+            <span className="text-xs text-zinc-500 mr-2">TOTAL ASSETS</span>
+            <span className="text-2xl font-mono font-bold text-agent-cyan">
+              {formatCurrency(totalAssetValue)}
+            </span>
+          </div>
         </div>
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -172,7 +149,7 @@ const CategorySummary: React.FC<CategorySummaryProps> = ({ data, loading }) => {
                 tickFormatter={formatAmount}
                 width={50}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+              <Tooltip content={<CustomTooltip />} cursor={false} />
               <Bar dataKey="금액" radius={[4, 4, 0, 0]}>
                 {chartData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -183,39 +160,37 @@ const CategorySummary: React.FC<CategorySummaryProps> = ({ data, loading }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {categoryStats.map((stat, idx) => (
           <div 
             key={idx} 
             className={`
-              bg-bg-card border rounded-xl p-5 flex flex-col justify-between transition-all hover:bg-[#121214]
+              bg-bg-card border rounded-xl p-4 xl:p-5 flex flex-col justify-between transition-all hover:bg-[#121214]
               ${stat.riskCount > 0 ? 'border-status-risk/30 shadow-[0_0_10px_rgba(244,63,94,0.05)]' : 'border-border hover:border-agent-cyan/30'}
               ${stat.totalQty === 0 ? 'opacity-60' : 'opacity-100'}
             `}
           >
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="text-sm font-bold text-zinc-200 break-keep leading-snug min-h-[2.5em]">
+            <div className="flex justify-between items-start gap-2 mb-2 xl:mb-3">
+              <h3 className="text-xs xl:text-sm font-bold text-zinc-200 break-keep leading-snug">
                 {stat.name}
               </h3>
               {stat.riskCount > 0 && (
-                <div className="flex items-center gap-1 text-[10px] text-status-risk bg-status-risk/10 px-2 py-0.5 rounded-full">
-                  <AlertCircle size={10} />
-                  <span>위험 {stat.riskCount}</span>
+                <div className="flex items-center gap-0.5 text-[9px] xl:text-[10px] text-status-risk bg-status-risk/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                  <AlertCircle size={9} className="xl:w-2.5 xl:h-2.5" />
+                  <span>위험{stat.riskCount}</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-1">
-              <div className="text-xl font-mono font-bold text-white tracking-tight">
+            <div className="space-y-1 overflow-hidden">
+              <div className="text-lg xl:text-xl font-mono font-bold text-white tracking-tight truncate">
                 {formatCurrency(stat.totalAmount)}
               </div>
-              <div className="flex items-center gap-3 text-xs text-zinc-500 font-mono">
-                <span className="flex items-center gap-1">
-                    <Package size={12} />
-                    Qty: {stat.totalQty.toLocaleString()}
-                </span>
-                <span className="w-px h-3 bg-zinc-700"></span>
-                <span>Items: {stat.itemCount}</span>
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono">
+                <Package size={9} className="flex-shrink-0" />
+                <span className="truncate">{stat.totalQty.toLocaleString()}</span>
+                <span className="text-zinc-600">|</span>
+                <span className="truncate">{stat.itemCount}개</span>
               </div>
             </div>
           </div>

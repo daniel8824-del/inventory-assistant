@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (민감 정보)
+.env
+.env.local
+.env.*.local
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +28,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI/분석 도구 출력 파일
+repomix-output.xml
+cursor_.md
+
+# 압축 파일
+App_Export.zip
+*.zip

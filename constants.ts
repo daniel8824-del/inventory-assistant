@@ -1,12 +1,20 @@
 import { StockItem } from './types';
 
+// ========================================
+// 환경변수에서 설정값 로드
+// ========================================
+// Vite 환경변수: import.meta.env.VITE_* 형태로 접근
+// 참고: .env.local 파일에서 값을 설정하세요
+
 // 1. Supabase (Direct DB Access)
-export const SUPABASE_URL = "https://yizyfkhsnncxyzwsvrfp.supabase.co";
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || "";
+export const SUPABASE_TABLE = import.meta.env.VITE_SUPABASE_TABLE || "current_stock";
 
-// Supabase 'anon' public key
-export const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlpenlma2hzbm5jeHl6d3N2cmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MDU1NjksImV4cCI6MjA4MTM4MTU2OX0.VqRTm70s7_wcz3O1lMjDcgxokhn7mdIpsph3DGyZIBk"; 
-
-export const SUPABASE_TABLE = "current_stock"; 
+// 환경 설정
+// Vite 빌드 시 자동 설정: development(개발) / production(빌드)
+export const APP_ENV = import.meta.env.MODE;
+export const IS_DEV = import.meta.env.DEV; // Vite 내장 변수 (true/false) 
 
 // Target Categories for filtering (22 Items) - 순서 중요!
 export const TARGET_CATEGORIES = [
@@ -46,7 +54,35 @@ export const getCategoryOrder = (category: string): number => {
 };
 
 // Chat Webhook (Only for ChatPanel)
-export const CHAT_WEBHOOK_URL = "https://daniel8824.app.n8n.cloud/webhook/5d8f1d94-30c6-4b7a-b351-5f78ffad2143/chat";
+export const CHAT_WEBHOOK_URL = import.meta.env.VITE_CHAT_WEBHOOK_URL || "";
+
+// n8n Form URLs
+export const N8N_FORM_URLS = {
+  inventory: import.meta.env.VITE_N8N_INVENTORY_FORM_URL || "https://daniel8824.app.n8n.cloud/form/inventory",
+  deal: import.meta.env.VITE_N8N_DEAL_FORM_URL || "https://daniel8824.app.n8n.cloud/form/deal",
+  ecobInventory: import.meta.env.VITE_N8N_ECOB_INVENTORY_FORM_URL || "https://daniel8824.app.n8n.cloud/form/ecob-inventory",
+  ecobDeal: import.meta.env.VITE_N8N_ECOB_DEAL_FORM_URL || "https://daniel8824.app.n8n.cloud/form/ecob-deal",
+};
+
+// 에코비 카테고리 (2개)
+export const ECOB_CATEGORIES = [
+  "에코비_재고",
+  "방열판,하네스_재고"
+];
+
+// DealHistoryTable에서 사용하는 alias
+export const ECOB_TARGET_CATEGORIES = ECOB_CATEGORIES;
+
+// 에코비 카테고리 순서 매핑
+export const ECOB_CATEGORY_ORDER: { [key: string]: number } = ECOB_CATEGORIES.reduce(
+  (acc, cat, idx) => ({ ...acc, [cat]: idx + 1 }),
+  {}
+);
+
+// 에코비 카테고리 순서 반환 함수
+export const getEcobCategoryOrder = (category: string): number => {
+  return ECOB_CATEGORY_ORDER[category] ?? 999;
+};
 
 // 2. Dynamic Simulation Data (Fallback if API fails)
 const generateMockData = (): StockItem[] => [

@@ -46,3 +46,15 @@ export interface N8nResponse {
   response?: string;
   [key: string]: any;
 }
+
+export interface AuditLog {
+  id: number;
+  table_name: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
+  record_id: string | null;
+  old_data: Record<string, any> | null;
+  new_data: Record<string, any> | null;
+  user_id: string | null;
+  user_email: string | null;
+  created_at: string;
+}
